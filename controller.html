@@ -1,0 +1,153 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1 user-scalable=0' name='viewport'>
+    <title>AirConsole Controller</title>
+    <link href='https://fonts.googleapis.com/css?family=Play:400,700' rel='stylesheet' type='text/css'>
+    <!-- AirConsole-Controls -->
+    <link rel="stylesheet" type="text/css" href="airconsole-controls/button/button.css">
+    <link rel="stylesheet" type="text/css" href="airconsole-controls/dpad/dpad.css">
+    <!-- Styles -->
+    <link rel="stylesheet" type="text/css" href="controller/styles/styles.css">
+    <link rel="stylesheet" type="text/css" href="controller/styles/controls.css">
+
+    <!-- 3rd Party Libs -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="controller/libs/handlebars-v4.0.5.js"></script>
+    <!-- AIRCONSOLE -->
+    <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-latest.js"></script>
+    <script type="text/javascript" src="controller/libs/airconsole_view_manager.js"></script>
+    <!-- AIRCONSOLE CONTROLS -->
+    <script type="text/javascript" src="airconsole-controls/button/button.js"></script>
+    <script type="text/javascript" src="airconsole-controls/dpad/dpad.js"></script>
+    <script type="text/javascript" src="airconsole-controls/swipe-analog/swipe-analog.js"></script>
+    <script type="text/javascript" src="airconsole-controls/swipe-digital/swipe-digital.js"></script>
+    <!-- GENERATOR -->
+    <script type="text/javascript" src="controller/js/controller_generator.js"></script>
+    <script type="text/javascript" src="controller/js/main.js"></script>
+</head>
+
+<body>
+    <div id="controller-container">
+        <h3 id="current-state">Current state</h3>
+
+        <!-- Join state -->
+        <div id="state-join">
+            <button id="state-join-join-button">JOIN</button>
+        </div>
+        <!-- Waiting to join state -->
+        <div id="state-waiting-to-join">
+            <h3>Waiting for current round to end</h3>
+        </div>
+        <!-- Lobby ready button state -->
+        <div id="state-lobby-show-ready-button">
+            <button id="state-lobby-ready-button">READY</button>
+        </div>
+        <!-- Lobby already ready state -->
+        <div id="state-lobby-already-ready">
+            <h3>Waiting for other players...</h3>
+        </div>
+        <!-- Enter excuse state -->
+        <div id="state-enter-excuse">
+            <h3 id="state-enter-excuse-prompt">Enter excuse state</h3>
+            <input id="excuse-textfield" type="text"  name="name" required minlength="1" maxlength="150" size="20">
+            <button id="state-enter-excuse-submit-button">SUBMIT</button>
+        </div>
+        <!-- Submitted excuse state -->
+        <div id="state-submitted-excuse">
+            <h3>Excuse submitted</h3>
+            <h3>Waiting for other players...</h3>
+        </div>
+        <!-- Execution waiting state -->
+        <div id="state-execution-waiting">
+            <h3>Stand-by for reaction</h3>
+        </div>
+        <!-- Execution judging state -->
+        <div id="state-execution-judge">
+            <button id="state-execution-judge-boo-button">BOO</button>
+            <button id="state-execution-judge-lol-button">LOL</button>
+        </div>
+        <!-- Results state -->
+        <div id="state-results">
+            <h3>Look at screen for results</h3>
+        </div>
+
+        <!-- Code -->
+        <script type="text/javascript">
+            // Utility functions
+
+            function HideAllStatesExcept(currentState) {
+                document.getElementById("state-join").style.display = "none";
+                document.getElementById("state-waiting-to-join").style.display = "none";
+                document.getElementById("state-lobby-show-ready-button").style.display = "none";
+                document.getElementById("state-lobby-already-ready").style.display = "none";
+                document.getElementById("state-enter-excuse").style.display = "none";
+                document.getElementById("state-submitted-excuse").style.display = "none";
+                document.getElementById("state-execution-waiting").style.display = "none";
+                document.getElementById("state-execution-judge").style.display = "none";
+                document.getElementById("state-results").style.display = "none";
+
+                document.getElementById(currentState).style.display = "block";
+            }
+            function UpdateCurrentStateDisplay(stateName) {
+                document.getElementById("current-state").innerHTML = "state: " + stateName;
+            }
+
+            // Starting screen
+            HideAllStatesExcept("state-join");
+            UpdateCurrentStateDisplay("state-join");
+
+            // Initialise airconsole + screen comms
+            var a = new AirConsole('{orientation":"portrait"}');
+            a.onMessage = function (from, data) {
+                // State changes
+                var changeState = data["change_state"];
+                if (changeState != null) {
+                    HideAllStatesExcept(changeState);
+                    UpdateCurrentStateDisplay(changeState)
+                    return;
+                }
+
+                // Display prompt
+                var receivedPrompt = data["received_prompt"];
+                if (receivedPrompt != null) {
+                    document.getElementById("state-enter-excuse-prompt").innerHTML = receivedPrompt;
+                }
+            };
+
+            // Behaviour/button listeners
+            // state-join
+            document.getElementById("state-join-join-button").addEventListener("click", function () {
+                a.message(AirConsole.SCREEN, "join-button-clicked");
+            });
+
+            // state-lobby-show-ready-button
+            document.getElementById("state-lobby-ready-button").addEventListener("click", function () {
+                a.message(AirConsole.SCREEN, "lobby-ready-button-clicked");
+            });
+
+            // state-enter-excuse
+            document.getElementById("state-enter-excuse-submit-button").addEventListener("click", function () {
+                var excuseValue = document.getElementById("excuse-textfield").value;
+                var data = {
+                    "excuse_text": excuseValue
+                };
+                a.message(AirConsole.SCREEN, data);
+            });
+
+            // state-execution-judge
+            document.getElementById("state-execution-judge-boo-button").addEventListener("click", function () {
+                a.message(AirConsole.SCREEN, "execution-boo-button-clicked");
+            });
+            document.getElementById("state-execution-judge-lol-button").addEventListener("click", function () {
+                a.message(AirConsole.SCREEN, "execution-lol-button-clicked");
+            });
+
+        </script>
+
+    </div>
+
+   
+</body>
+</html>
